@@ -1,5 +1,8 @@
 # Diretrizes do Projeto
 
+## ⚠️ IMPORTANTE - Git Workflow
+**NUNCA faça commits ou push automaticamente. Sempre aguarde instrução explícita do usuário.**
+
 ## Visão Geral
 Boilerplate Node.js REST API com arquitetura SOLID, seguindo princípios de Clean Architecture e Domain-Driven Design.
 
@@ -273,12 +276,182 @@ export class PostgresUserRepository implements IUserRepository {
 - Use cases são versionados em pastas: `v1/`, `v2/`
 - Permite evolução sem quebrar clientes existentes
 
+## Diretrizes de Commits
+
+### Regras Principais
+- **NUNCA faça commits ou push sem autorização explícita do usuário**
+- Um arquivo por commit quando possível
+- Mensagens claras, descritivas e em português
+- Sempre usar autor: `caf-3 <caf-3@example.com>`
+- Sem comentários de IA, Claude Code ou similares nas mensagens
+
+### Formato dos Commits
+```bash
+git commit --author="caf-3 <caf-3@example.com>" -m "mensagem descritiva"
+```
+
+### Mensagens de Commit
+- **add**: Adicionar novo arquivo ou funcionalidade
+- **update**: Atualizar arquivo existente
+- **fix**: Corrigir bug
+- **remove**: Remover arquivo ou funcionalidade
+- **refactor**: Refatorar código sem mudar funcionalidade
+
+### Exemplos
+```bash
+# Bom ✅
+git commit -m "add user authentication middleware"
+git commit -m "update validation helpers with new types"
+git commit -m "fix repository injection in use cases"
+
+# Ruim ❌
+git commit -m "add files 🤖 Generated with Claude Code"
+git commit -m "updates"
+git commit -m "changes"
+```
+
+## Diretrizes dos Scripts
+
+### Scripts de Geração
+Todos os scripts devem seguir estas regras:
+
+#### 1. Limite de Linhas
+- Arquivo principal: máximo 200 linhas
+- Se exceder, mover lógica para `scripts/utils/`
+- Manter código organizado e modular
+
+#### 2. Nomenclatura
+- Arquivos principais: `generate-*.js`, `inject-*.js`
+- Arquivos utilitários: `*Helpers.js`, `*Utils.js`
+- Usar camelCase para funções e variáveis
+- Usar PascalCase para classes
+
+#### 3. Estrutura Padrão
+```javascript
+const fs = require('fs');
+const path = require('path');
+const readline = require('readline');
+// Imports de helpers
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+function question(query) {
+    return new Promise(resolve => rl.question(query, resolve));
+}
+
+async function main() {
+    try {
+        // Lógica principal
+    } catch (error) {
+        console.error('❌ Erro:', error.message);
+        process.exit(1);
+    } finally {
+        rl.close();
+    }
+}
+
+main();
+```
+
+#### 4. User Experience
+- Sempre mostrar mensagens claras com emojis
+- Listar opções disponíveis antes de pedir input
+- Validar inputs do usuário
+- Mostrar progresso e resultados
+- Dar feedback sobre o que foi criado/modificado
+
+#### 5. Mensagens Console
+```javascript
+// Títulos
+console.log('\n🚀 Gerador de Use Cases\n');
+
+// Listas
+console.log('📋 Models disponíveis:');
+console.log('   1. User');
+console.log('   2. Post');
+
+// Sucesso
+console.log('✅ Arquivo criado com sucesso!');
+
+// Aviso
+console.log('⚠️  Atenção: validação não encontrada');
+
+// Erro
+console.log('❌ Erro: arquivo já existe');
+
+// Informação
+console.log('💡 Dica: use camelCase para nomes');
+```
+
+#### 6. Validação e Segurança
+- Sempre verificar se arquivos/diretórios existem
+- Perguntar antes de sobrescrever arquivos
+- Validar nomes e paths fornecidos pelo usuário
+- Tratar erros adequadamente
+- Nunca assumir estrutura de diretórios
+
+#### 7. Helpers e Utilitários
+Organizar em `scripts/utils/`:
+- `stringHelpers.js` - Conversões de case
+- `validationHelpers.js` - Validações express-validator
+- `templateHelpers.js` - Geração de templates
+- `prismaParser.js` - Parse do schema.prisma
+- `*Helpers.js` - Helpers específicos por domínio
+
+### Padrões de Templates
+
+#### Use Case
+```javascript
+function generateUseCaseContent(useCasePascal, useCaseCamel) {
+    return `import { I${useCasePascal}DTO } from "./${useCaseCamel}.DTO";
+
+export class ${useCasePascal}UseCase {
+    // TODO: Injete as dependências necessárias
+    constructor() {}
+
+    async execute(data: I${useCasePascal}DTO) {
+        try {
+            // TODO: Implemente a lógica do use case
+
+            return {
+                message: "sucesso",
+                status: 200,
+                data: {}
+            };
+        } catch (error: any) {
+            throw new Error(error);
+        }
+    }
+}
+`;
+}
+```
+
+#### Repository Interface
+```javascript
+function generateRepositoryInterface(entityName) {
+    return `import { ${entityName}Entity } from "../entities/${entityName.toLowerCase()}.entity";
+
+export interface I${entityName}Repository {
+    create(data: Omit<${entityName}Entity, "id" | "created_at" | "updated_at">): Promise<${entityName}Entity>;
+    findById(id: string): Promise<${entityName}Entity | null>;
+    update(id: string, data: Partial<${entityName}Entity>): Promise<${entityName}Entity | null>;
+    delete(id: string): Promise<boolean>;
+}
+`;
+}
+```
+
 ## Boas Práticas
 
 ### Commits
+- **Aguardar instrução explícita para fazer commits/push**
 - Um arquivo por commit quando possível
 - Mensagens claras e descritivas
-- Autor configurado corretamente
+- Autor configurado: caf-3
 
 ### Código
 - Evite comentários desnecessários
@@ -315,6 +488,13 @@ npm run dev                    # Inicia servidor em modo dev
 npm run build                  # Compila TypeScript
 npm start                      # Inicia servidor produção
 
+# Geradores
+npm run generate:usecase       # Gerar use case
+npm run generate:entity        # Gerar entity do Prisma
+npm run generate:repository    # Gerar repository
+npm run inject:dependency      # Injetar dependências
+npm run generate:route         # Gerar rota
+
 # Prisma
 npx prisma generate           # Gera Prisma Client
 npx prisma migrate dev        # Cria migração
@@ -325,4 +505,92 @@ npm run lint                  # Verifica erros
 npm run lint:fix              # Corrige erros automaticamente
 npm run format                # Formata código
 npm run format:check          # Verifica formatação
+
+# Git (apenas quando autorizado pelo usuário)
+git add <arquivo>
+git commit --author="caf-3 <caf-3@example.com>" -m "mensagem"
+git push
 ```
+
+## Workflow Completo - Exemplo Prático
+
+### Criar feature completa de "Posts"
+
+1. **Atualizar Schema Prisma**
+```prisma
+model Post {
+  id         String   @id @unique @default(uuid())
+  title      String
+  content    String
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("posts")
+}
+```
+
+2. **Gerar Prisma Client**
+```bash
+npx prisma generate
+```
+
+3. **Gerar Entity**
+```bash
+npm run generate:entity
+# Escolher: Post
+```
+
+4. **Gerar Repository**
+```bash
+npm run generate:repository
+# Escolher: Post
+# Criar implementação: Sim
+```
+
+5. **Gerar Use Case "CreatePost"**
+```bash
+npm run generate:usecase
+# Domínio: posts
+# Nome: createPost
+# Versão: v1
+# Adicionar campos: Sim
+  # Campo: title, tipo: string, obrigatório, fonte: body
+  # Campo: content, tipo: string, obrigatório, fonte: body
+  # Campo: userId, tipo: uuid, obrigatório, fonte: body
+```
+
+6. **Injetar Repository no Use Case**
+```bash
+npm run inject:dependency
+# Use case: posts/createPost/v1
+# Repository: IPostRepository
+```
+
+7. **Implementar Lógica**
+Editar `src/useCases/posts/createPost/v1/createPost.ts`:
+```typescript
+async execute(data: ICreatePostDTO) {
+    try {
+        const post = await this.postRepository.create(data);
+        return { message: "Post criado com sucesso", status: 201, data: post };
+    } catch (error: any) {
+        throw new Error(error);
+    }
+}
+```
+
+8. **Gerar Rota**
+```bash
+npm run generate:route
+# Use case: posts/createPost/v1
+# Método: POST
+# Path: /
+# Validação: Sim
+# Autenticação: jwtDecoder
+```
+
+9. **Aguardar autorização para commit e push**
+
+**Resultado:** Feature completa de criação de posts com validação, autenticação JWT e seguindo SOLID.
